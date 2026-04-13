@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rainbow Arcade Email Mega-Simulator</title>
+<style>
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        height: 100vh;
+        background: radial-gradient(circle at top, #1b1b2f 0, #162447 30%, #1f4068 60%, #1b1b2f 100%);
+        background-size: 200% 200%;
+        animation: bgShift 16s ease-in-out infinite;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #e3f2fd;
+    }
+
+    @keyframes bgShift {
+        0% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+        100% { background-position: 0% 0%; }
+    }
+
+    .arcade-shell {
+        width: 94%;
+        max-width: 1200px;
+        height: 90vh;
+        background: linear-gradient(135deg, rgba(15,15,30,0.95), rgba(20,20,40,0.96));
+        border-radius: 24px;
+        box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        padding: 16px 18px 18px;
+        border: 2px solid rgba(255,255,255,0.08);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .scanlines {
+        pointer-events: none;
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 100% 3px;
+        mix-blend-mode: soft-light;
+        opacity: 0.4;
+    }
+
+    .neon-title {
+        font-size: 30px;
+        text-align: left;
+        margin-bottom: 4px;
+        background: linear-gradient(90deg, #ff0080, #ff8c00, #ffee00, #00e676, #00b0ff, #8e24aa);
+        -webkit-background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 10px rgba(255,255,255,0.9);
+    }
+
+    .subtitle {
+        font-size: 13px;
+        color: #b0bec5;
+        margin-bottom: 10px;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        margin-bottom: 10px;
+        gap: 8px;
+    }
+
+    .stat-pill {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.12);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #eceff1;
+        backdrop-filter: blur(10px);
+    }
+
+    .rainbow-text {
+        background: linear-gradient(90deg, #ff0080, #ff8c00, #ffee00, #00e676, #00b0ff, #8e24aa);
+        -webkit-background-clip: text;
+        color: transparent;
+        font-weight: 600;
+    }
+
+    .layout {
+        flex: 1;
+        display: grid;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        gap: 14px;
+        min-height: 0;
+    }
+
+    .left-panel, .right-panel {
+        position: relative;
+        border-radius: 18px;
+        background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        padding: 10px 12px;
+        backdrop-filter: blur(14px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .panel-header {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #90a4ae;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chip {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(0,0,0,0.3);
+        font-size: 11px;
+        color: #cfd8dc;
+    }
+
+    .menu-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .menu-btn {
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffffff;
+        background: linear-gradient(135deg, #ff0080, #ff8c00, #ffee00);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+        width: 100%;
+        text-align: left;
+    }
+
+    .menu-btn:hover {
+        transform: translateY(-1px) scale(1.02);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+        filter: brightness(1.05);
+    }
+
+    #shopPanel, #achievementsPanel, #inboxPanel, #leaderboardPanel {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.12);
+        font-size: 13px;
+        max-height: 40%;
+        overflow-y: auto;
+    }
+
+    .shop-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(255,255,255,0.12);
+    }
+
+    .shop-item button {
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 11px;
+        background: linear-gradient(135deg, #ff8c00, #ffee00);
+        color: #212121;
+        font-weight: 600;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #00e676, #00b0ff);
+        color: #ffffff;
+        font-size: 11px;
+        margin: 2px;
+        white-space: nowrap;
+    }
+
+    #leaderboardTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    #leaderboardTable th,
+    #leaderboardTable td {
+        padding: 3px 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        text-align: left;
+        color: #eceff1;
+    }
+
+    #leaderboardTable th {
+        font-weight: 600;
+        color: #cfd8dc;
+    }
+
+    .game-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    #gamePanel.hidden {
+        display: none;
+    }
+
+    .meta-row {
+        font-size: 12px;
+        color: #b0bec5;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .mood-bar-wrap {
+        width: 160px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+    }
+
+    .mood-bar-fill {
+        height: 100%;
+        width: 50%;
+        background: linear-gradient(90deg, #ff1744, #ffea00, #00e676, #00b0ff, #8e24aa);
+        transition: width 0.2s;
+    }
+
+    #moodText {
+        font-size: 11px;
+        color: #cfd8dc;
+        margin-left: 4px;
+    }
+
+    #powerups {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .powerup-btn {
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 11px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #ff0080, #ff8c00);
+        text-shadow: 0 0 4px rgba(0,0,0,0.7);
+    }
+
+    .powerup-btn:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+
+    #hintBox {
+        font-size: 12px;
+        color: #ffecb3;
+        margin-bottom: 6px;
+        min-height: 16px;
+    }
+
+    #title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        font-size: 15px;
+        color: #ffffff;
+    }
+
+    .email-box {
+        background: radial-gradient(circle at top left, rgba(142,36,170,0.35), rgba(13,71,161,0.4));
+        border-radius: 12px;
+        padding: 10px;
+        border-left: 4px solid #ffca28;
+        white-space: pre-line;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #e3f2fd;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+    }
+
+    #choices {
+        margin-bottom: 6px;
+    }
+
+    .choice {
+        padding: 8px 9px;
+        margin: 4px 0;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        background: linear-gradient(90deg, #ff8c00, #ffee00);
+        color: #212121;
+        border: 2px solid transparent;
+        transition: 0.12s;
+        width: 100%;
+        text-align: left;
+    }
+
+    .choice:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    }
+
+    .choice.best-hint {
+        border-color: #00e676;
+    }
+
+    .choice.disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    #feedback {
+        margin-top: 4px;
+        padding: 8px;
+        border-radius: 10px;
+        background: rgba(255,248,225,0.08);
+        border-left: 4px solid #ffb300;
+        font-size: 13px;
+        display: none;
+        color: #ffe082;
+    }
+
+    #reflectionBox {
+        display: none;
+        margin-top: 8px;
+        padding: 8px;
+        border-radius: 12px;
+        background: rgba(227,242,253,0.08);
+        border-left: 4px solid #42a5f5;
+        font-size: 13px;
+        color: #bbdefb;
+    }
+
+    #reflectionInput {
+        width: 100%;
+        height: 60px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 1px solid rgba(144,202,249,0.7);
+        padding: 6px;
+        font-size: 12px;
+        background: rgba(0,0,0,0.4);
+        color: #e3f2fd;
+    }
+
+    #reflectionContinue {
+        margin-top: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 13px;
+        background: linear-gradient(135deg, #42a5f5, #7e57c2);
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    #nextBtn {
+        margin-top: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffffff;
+        background: linear-gradient(135deg, #00b0ff, #8e24aa);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+        display: none;
+        align-self: flex-end;
+    }
+
+    #nextBtn:hover {
+        transform: translateY(-1px);
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 900px) {
+        .layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="arcade-shell">
+    <div class="scanlines"></div>
+
+    <div class="neon-title">Rainbow Arcade Email Simulator 🎮📧</div>
+    <div class="subtitle">Tone • Clarity • Security • Rude Inbox Chaos • 200+ Scenarios • Leaderboard</div>
+
+    <div class="top-bar">
+        <div class="stat-pill">
+            Mode: <span id="modeLabel" class="rainbow-text">Home</span>
+        </div>
+        <div class="stat-pill">
+            XP: <span id="xp" class="rainbow-text">0</span> |
+            Level: <span id="level" class="rainbow-text">1</span> |
+            Coins: <span id="coins" class="rainbow-text">0</span>
+        </div>
+        <div class="stat-pill">
+            Mood:
+            <div class="mood-bar-wrap">
+                <div id="moodBar" class="mood-bar-fill"></div>
+            </div>
+            <span id="moodText">Neutral</span>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- LEFT PANEL: HOME + META -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <span>Arcade Hub</span>
+                <span class="chip">Career • Boss • Exam</span>
+            </div>
+
+            <div class="menu-grid" id="homeMenu">
+                <button class="menu-btn" onclick="startCareer()">▶ Start Career Mode</button>
+                <button class="menu-btn" onclick="startBoss()">👑 Executive Boss Fight</button>
+                <button class="menu-btn" onclick="startExam()">⚡ Final Exam Mode</button>
+                <button class="menu-btn" onclick="toggleShop()">🛒 Power-Up Shop</button>
+                <button class="menu-btn" onclick="toggleAchievements()">🏆 Achievements</button>
+                <button class="menu-btn" onclick="toggleInbox()">📬 Inbox View</button>
+                <button class="menu-btn" onclick="toggleLeaderboard()">📊 Leaderboard</button>
+                <button class="menu-btn" onclick="returnHome()">🏠 Back to Home</button>
+            </div>
+
+            <div id="shopPanel" style="display:none;">
+                <strong>Power-Up Shop</strong> (Coins: <span id="coinsShop">0</span>)<br><br>
+                <div class="shop-item">
+                    <span>+1 Tone Booster (cost 5)</span>
+                    <button onclick="buyPowerup('tone',5)">Buy</button>
+                </div>
+                <div class="shop-item">
+                    <span>+1 Clarity Scanner (cost 5)</span>
+                    <button onclick="buyPowerup('clarity',5)">Buy</button>
+                </div>
+                <div class="shop-item">
+                    <span>+1 Security Shield (cost 5)</span>
+                    <button onclick="buyPowerup('security',5)">Buy</button>
+                </div>
+            </div>
+
+            <div id="achievementsPanel" style="display:none;">
+                <strong>Achievements</strong><br><br>
+                <div id="achievementsList"></div>
+            </div>
+
+            <div id="inboxPanel" style="display:none;">
+                <strong>Inbox View (flavor only)</strong><br><br>
+                <ul style="margin:0 0 0 18px; padding:0; list-style:disc; font-size:13px;">
+                    <li>Career Mode: 200 scenario slots</li>
+                    <li>Boss Fight: Executive escalation threads</li>
+                    <li>Final Exam: Certification-style mixed scenarios</li>
+                    <li>Rude/defensive emails sprinkled throughout</li>
+                </ul>
+            </div>
+
+            <div id="leaderboardPanel" style="display:none;">
+                <strong>Leaderboard (Top 10 Scores)</strong><br><br>
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Score</th>
+                            <th>XP</th>
+                            <th>Mode</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: GAMEPLAY -->
+        <div class="right-panel">
+            <div class="panel-header">
+                <span>Active Scenario</span>
+                <span class="chip">Tone • Clarity • Security</span>
+            </div>
+
+            <div id="gamePanel" class="game-panel hidden">
+                <div class="meta-row">
+                    <span>
+                        Scenario <span id="scenarioIndex" class="rainbow-text"></span> /
+                        <span id="scenarioTotal" class="rainbow-text"></span> |
+                        Stage <span id="stageIndex" class="rainbow-text"></span> / 3
+                    </span>
+                    <span>Score: <span id="score" class="rainbow-text">0</span></span>
+                </div>
+
+                <div id="powerups">
+                    <button id="toneBtn" class="powerup-btn" onclick="usePowerup('tone')">⭐ Tone Booster (<span id="toneCount">1</span>)</button>
+                    <button id="clarityBtn" class="powerup-btn" onclick="usePowerup('clarity')">🔍 Clarity Scanner (<span id="clarityCount">1</span>)</button>
+                    <button id="securityBtn" class="powerup-btn" onclick="usePowerup('security')">🛡 Security Shield (<span id="securityCount">1</span>)</button>
+                </div>
+                <div id="hintBox"></div>
+
+                <div id="title"></div>
+                <div id="email" class="email-box"></div>
+                <div id="choices"></div>
+                <div id="feedback"></div>
+
+                <div id="reflectionBox">
+                    <div id="reflectionQuestions"></div>
+                    <textarea id="reflectionInput" placeholder="Write a quick reflection..."></textarea>
+                    <button id="reflectionContinue" onclick="closeReflection()">Continue</button>
+                </div>
+
+                <button id="nextBtn" onclick="nextStep()">Next</button>
+            </div>
+
+            <div id="placeholderPanel" style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:14px; color:#b0bec5;">
+                <div style="font-size:40px; margin-bottom:8px;">📥</div>
+                <div>Pick a mode on the left to start your run.</div>
+                <div style="margin-top:4px;">Career for long grind • Boss for spikes • Exam for focused challenge.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Reflection prompts
+const reflectionPrompts = [
+    [
+        "What made the best response effective?",
+        "How would you handle this situation in real life?"
+    ],
+    [
+        "What tone did you aim for in your responses?",
+        "What would you improve next time?"
+    ],
+    [
+        "Did any choices surprise you?",
+        "How could you apply this lesson at work?"
+    ],
+    [
+        "What communication skill mattered most here?",
+        "How would you explain this scenario to a coworker?"
+    ],
+    [
+        "What mistake would be easiest to make in this scenario?",
+        "How can you avoid it in the future?"
+    ]
+];
+
+// Base scenarios (multi-part) – includes some very rude/defensive emails
+const baseScenarios = [
+    {
+        title: "Vague Client Request",
+        stages: [
+            {
+                email: "Subject: Need help with the report\n\nHi,\nCan you fix the report and send it back today?\n\n– Morgan",
+                type: "clarity",
+                choices: [
+                    { text: "Sure, I’ll fix it and send it soon.", score: 1, mood: -1, feedback: "You agreed, but didn’t clarify what needs fixing. Risk of rework.", hint: "Ask what exactly needs to be changed." },
+                    { text: "I can’t fix something without details. Be clearer next time.", score: 0, mood: -2, feedback: "Tone is confrontational and unhelpful.", hint: "Stay professional even if the request is vague." },
+                    { text: "Hi Morgan, happy to help. Could you clarify which sections need changes? Once I know, I can send it today.", score: 3, mood: +2, feedback: "Professional, clarifies scope, sets expectations.", hint: "Clarify scope and confirm timeline." }
+                ]
+            },
+            {
+                email: "Morgan replies:\n\n\"It’s mainly the recommendations section. The VP wants clearer next steps.\"\n\nHow do you respond?",
+                type: "tone",
+                choices: [
+                    { text: "Okay, I’ll just rewrite everything.", score: 1, mood: 0, feedback: "Willing, but vague and may overdo work.", hint: "Confirm what 'clearer' means." },
+                    { text: "You should have said that earlier.", score: 0, mood: -2, feedback: "Blaming the client hurts the relationship.", hint: "Avoid blame; focus on solutions." },
+                    { text: "Got it, thanks for clarifying. I’ll tighten the recommendations and highlight 3 clear next steps.", score: 3, mood: +2, feedback: "Solution-focused and specific.", hint: "Acknowledge, restate, and propose a clear plan." }
+                ]
+            },
+            {
+                email: "Final step: You’re about to send the updated report.\nWhat subject line do you use?",
+                type: "clarity",
+                choices: [
+                    { text: "Re: Report", score: 1, mood: 0, feedback: "Technically fine, but not very clear.", hint: "Include what changed." },
+                    { text: "Here you go", score: 0, mood: -1, feedback: "Too vague and informal.", hint: "Think: would this make sense in a busy inbox?" },
+                    { text: "Updated Recommendations – Q3 Report for VP", score: 3, mood: +2, feedback: "Clear, specific, and professional.", hint: "Summarize the key change in the subject line." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Frustrated Coworker",
+        stages: [
+            {
+                email: "Subject: Seriously\n\nWhy didn’t you send me the files like you said? You’re holding up the whole project.\n\n– Jamie",
+                type: "tone",
+                choices: [
+                    { text: "Calm down. I’m not the reason the project is slow.", score: 0, mood: -3, feedback: "Escalates conflict and dismisses their concern.", hint: "De-escalate, don’t mirror the tone." },
+                    { text: "I’m so sorry, I messed everything up.", score: 1, mood: -1, feedback: "Over-apologizing without facts.", hint: "Acknowledge feelings but check facts." },
+                    { text: "Hi Jamie, I sent the files yesterday at 3 PM—they may have been filtered. I’ve reattached them here.", score: 3, mood: +2, feedback: "Professional, factual, and helpful.", hint: "State facts calmly and offer a solution." }
+                ]
+            },
+            {
+                email: "Jamie replies:\n\n\"Okay, I see them now. Next time just ping me when you send something important.\"\n\nHow do you respond?",
+                type: "tone",
+                choices: [
+                    { text: "You should check your email more carefully.", score: 0, mood: -2, feedback: "Blaming them keeps tension high.", hint: "Look for a collaborative tone." },
+                    { text: "Sure, I’ll ping you every time.", score: 1, mood: 0, feedback: "Agreeing without boundaries may create extra work.", hint: "Set realistic expectations." },
+                    { text: "Thanks for confirming. For important files, I’ll send a quick chat message as well so nothing gets missed.", score: 3, mood: +2, feedback: "Collaborative and practical.", hint: "Offer a reasonable, shared process." }
+                ]
+            },
+            {
+                email: "Later, your manager asks how things are going with Jamie.\nHow do you respond?",
+                type: "tone",
+                choices: [
+                    { text: "Jamie overreacted to a simple email.", score: 0, mood: -1, feedback: "Labels the coworker instead of describing the situation.", hint: "Stick to facts, not judgments." },
+                    { text: "We had a small mix-up with file delivery, but we clarified a process to avoid it next time.", score: 3, mood: +2, feedback: "Professional, solution-focused summary.", hint: "Show that you resolved it constructively." },
+                    { text: "Everything is fine now.", score: 1, mood: 0, feedback: "Vague; misses the chance to show learning.", hint: "Briefly mention the improvement." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Suspicious Vendor Email",
+        stages: [
+            {
+                email: "Subject: URGENT: Payment Confirmation Needed\n\nPlease click the link below to confirm your payment details or your account will be suspended.\n\n– Vendor Billing Team",
+                type: "security",
+                choices: [
+                    { text: "Clicked the link and confirmed payment.", score: 0, mood: -3, feedback: "Major security risk.", hint: "Never click unknown payment links." },
+                    { text: "I don’t remember this invoice. Can you resend the link?", score: 1, mood: -1, feedback: "Engages with a suspicious sender.", hint: "Avoid continuing the conversation." },
+                    { text: "I cannot verify this request. For security reasons, I won’t click external links. I’ll forward this to our finance team.", score: 3, mood: +2, feedback: "Safe and professional.", hint: "Use internal channels to verify." }
+                ]
+            },
+            {
+                email: "Finance replies internally:\n\n\"Thanks for flagging. We’ve seen similar phishing attempts. Please remind your team to be cautious.\"\n\nHow do you respond to your team?",
+                type: "security",
+                choices: [
+                    { text: "Ignore it. They’ll figure it out.", score: 0, mood: -1, feedback: "Missed opportunity to improve security awareness.", hint: "Share useful info when you have it." },
+                    { text: "Forward the finance email with: \"Don’t click weird links.\"", score: 1, mood: 0, feedback: "Technically correct but not very clear or professional.", hint: "Give a bit more context and guidance." },
+                    { text: "Send a short note: \"Team, finance confirmed this was a phishing attempt. Please be cautious with unexpected payment emails and report anything suspicious.\"", score: 3, mood: +2, feedback: "Clear, helpful, and proactive.", hint: "Summarize and give a simple action." }
+                ]
+            },
+            {
+                email: "Later, the vendor you actually work with sends a legitimate invoice.\nWhat do you do?",
+                type: "security",
+                choices: [
+                    { text: "Pay it immediately without checking details.", score: 0, mood: -2, feedback: "Rushing payments can be risky.", hint: "Verify before acting." },
+                    { text: "Verify the invoice number and amount against your records, then process it through the normal system.", score: 3, mood: +2, feedback: "Balanced security and business needs.", hint: "Trust but verify using internal records." },
+                    { text: "Assume all vendor emails are phishing and ignore them.", score: 1, mood: -1, feedback: "Overcorrecting can hurt business.", hint: "Security shouldn’t block legitimate work." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Confusing Deadline",
+        stages: [
+            {
+                email: "Subject: Need this soon\n\nCan you finish the onboarding packet ASAP?\n\n– Dana",
+                type: "clarity",
+                choices: [
+                    { text: "Sure, I’ll do it.", score: 1, mood: -1, feedback: "No timeline clarified.", hint: "Ask for a specific deadline." },
+                    { text: "ASAP is not a deadline.", score: 0, mood: -2, feedback: "Tone too sharp.", hint: "Stay polite." },
+                    { text: "Happy to help — what exact time do you need it by?", score: 3, mood: +2, feedback: "Clear and professional.", hint: "Clarify expectations." }
+                ]
+            },
+            {
+                email: "Dana replies:\n\n\"Let’s say by end of day.\"\n\nHow do you respond?",
+                type: "tone",
+                choices: [
+                    { text: "That's still vague.", score: 0, mood: -2, feedback: "Unhelpful tone.", hint: "Offer specifics." },
+                    { text: "Okay, I’ll try.", score: 1, mood: 0, feedback: "Unclear commitment.", hint: "Confirm timing." },
+                    { text: "Great — I’ll have it ready by 4 PM.", score: 3, mood: +2, feedback: "Clear and reliable.", hint: "Confirm exact time." }
+                ]
+            },
+            {
+                email: "Final step: What subject line do you use?",
+                type: "clarity",
+                choices: [
+                    { text: "Here it is", score: 0, mood: -1, feedback: "Too vague.", hint: "Be descriptive." },
+                    { text: "Onboarding Packet", score: 1, mood: 0, feedback: "Okay but not specific.", hint: "Mention deadline." },
+                    { text: "Completed Onboarding Packet – EOD Delivery", score: 3, mood: +2, feedback: "Clear and professional.", hint: "Summarize deliverable." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Angry Customer",
+        stages: [
+            {
+                email: "Subject: This is ridiculous\n\nYour team STILL hasn’t fixed my issue.\n\n– Customer",
+                type: "tone",
+                choices: [
+                    { text: "Calm down, we’re working on it.", score: 0, mood: -3, feedback: "Escalates conflict.", hint: "Acknowledge frustration." },
+                    { text: "Sorry, I guess we messed up.", score: 1, mood: -1, feedback: "Too vague.", hint: "Be specific." },
+                    { text: "I understand your frustration — I’m checking the status now and will update you shortly.", score: 3, mood: +2, feedback: "Empathetic and proactive.", hint: "Acknowledge + action." }
+                ]
+            },
+            {
+                email: "Customer replies:\n\n\"Fine. When will it be fixed?\"",
+                type: "clarity",
+                choices: [
+                    { text: "Whenever the team gets to it.", score: 0, mood: -2, feedback: "Unprofessional.", hint: "Give a timeframe." },
+                    { text: "Probably today.", score: 1, mood: 0, feedback: "Uncertain.", hint: "Check first." },
+                    { text: "I’m confirming with the tech team now — I’ll send you an ETA within 30 minutes.", score: 3, mood: +2, feedback: "Clear and reliable.", hint: "Set expectations." }
+                ]
+            },
+            {
+                email: "Final step: How do you close the thread?",
+                type: "tone",
+                choices: [
+                    { text: "Let me know if you have more complaints.", score: 0, mood: -2, feedback: "Sarcastic.", hint: "Stay professional." },
+                    { text: "Hope this helps.", score: 1, mood: 0, feedback: "Neutral but generic.", hint: "Be supportive." },
+                    { text: "Thanks for your patience — I’m here if you need anything else.", score: 3, mood: +2, feedback: "Warm and professional.", hint: "Positive closure." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Reply-All Disaster",
+        stages: [
+            {
+                email: "Subject: Team Update\n\nPlease confirm your availability.\n\n– Manager",
+                type: "clarity",
+                choices: [
+                    { text: "Reply All: I’m free.", score: 0, mood: -1, feedback: "Unnecessary reply-all.", hint: "Reply only to sender." },
+                    { text: "Yes.", score: 1, mood: 0, feedback: "Too short.", hint: "Add context." },
+                    { text: "Hi, I’m available at the requested time.", score: 3, mood: +1, feedback: "Clear and polite.", hint: "Be specific." }
+                ]
+            },
+            {
+                email: "Manager replies:\n\n\"Thanks — next time avoid reply-all.\"",
+                type: "tone",
+                choices: [
+                    { text: "Everyone needed to know.", score: 0, mood: -2, feedback: "Defensive.", hint: "Acknowledge feedback." },
+                    { text: "Okay.", score: 1, mood: 0, feedback: "Neutral.", hint: "Show understanding." },
+                    { text: "Thanks for the reminder — I’ll keep replies direct next time.", score: 3, mood: +2, feedback: "Professional.", hint: "Acknowledge + improve." }
+                ]
+            },
+            {
+                email: "Final step: How do you close the loop?",
+                type: "tone",
+                choices: [
+                    { text: "Whatever.", score: 0, mood: -2, feedback: "Unprofessional.", hint: "Stay polite." },
+                    { text: "Noted.", score: 1, mood: 0, feedback: "Short.", hint: "Add warmth." },
+                    { text: "Thanks again — appreciate the guidance.", score: 3, mood: +2, feedback: "Positive.", hint: "Show appreciation." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Overly Casual Coworker",
+        stages: [
+            {
+                email: "Subject: doc thingy\n\nyo can u send me that doc thingy lol\n\n– Alex",
+                type: "tone",
+                choices: [
+                    { text: "Sure dude lol here ya go", score: 0, mood: -2, feedback: "Matches unprofessional tone and lacks clarity.", hint: "Stay professional even if they aren’t." },
+                    { text: "Please write professionally.", score: 1, mood: -1, feedback: "Correct point, but tone is a bit sharp.", hint: "You can correct without sounding harsh." },
+                    { text: "Hi Alex, I can send it — which document are you referring to?", score: 3, mood: +2, feedback: "Professional and clarifies the request.", hint: "Clarify and keep tone neutral." }
+                ]
+            },
+            {
+                email: "Alex replies:\n\n\"the one from that meeting idk which one tho\"",
+                type: "clarity",
+                choices: [
+                    { text: "You need to pay attention.", score: 0, mood: -2, feedback: "Blaming them doesn’t move things forward.", hint: "Focus on getting the info you need." },
+                    { text: "Which meeting are you referring to?", score: 2, mood: 0, feedback: "Better, but still a bit short.", hint: "Add a bit more structure." },
+                    { text: "No worries — can you confirm the date or topic of the meeting so I send the right file?", score: 3, mood: +2, feedback: "Clear, helpful, and specific.", hint: "Offer options to help them remember." }
+                ]
+            },
+            {
+                email: "Alex replies:\n\n\"oh yeah the budget one\"",
+                type: "clarity",
+                choices: [
+                    { text: "Here.", score: 0, mood: 0, feedback: "Too short and not descriptive.", hint: "Subject and body should both be clear." },
+                    { text: "Budget doc attached.", score: 1, mood: 0, feedback: "Better, but still minimal.", hint: "Add context and a polite close." },
+                    { text: "Attached: Q2 Budget Review document — let me know if you need anything else.", score: 3, mood: +2, feedback: "Clear, polite, and specific.", hint: "Summarize what you’re sending." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Walls of Text Manager",
+        stages: [
+            {
+                email: "Subject: Project Details\n\nA very long, unbroken paragraph with many instructions, no bullets, and no spacing.",
+                type: "clarity",
+                choices: [
+                    { text: "TLDR?", score: 0, mood: -2, feedback: "Too informal and dismissive.", hint: "Show effort before asking for a summary." },
+                    { text: "Can you summarize?", score: 1, mood: 0, feedback: "Reasonable, but doesn’t show you tried.", hint: "Reflect back what you understood." },
+                    { text: "Thanks for the details — to confirm, here are the key points I captured: [your brief summary]. Did I miss anything important?", score: 3, mood: +2, feedback: "Shows effort and invites correction.", hint: "Summarize and confirm." }
+                ]
+            },
+            {
+                email: "Manager replies:\n\n\"Yes, that’s correct.\"",
+                type: "tone",
+                choices: [
+                    { text: "Cool.", score: 1, mood: 0, feedback: "Informal and a bit flat.", hint: "You can be slightly more professional." },
+                    { text: "Great — I’ll proceed with those action items.", score: 3, mood: +2, feedback: "Professional and action-oriented.", hint: "Confirm next steps." },
+                    { text: "Finally some clarity.", score: 0, mood: -1, feedback: "Passive-aggressive tone.", hint: "Avoid snarky comments." }
+                ]
+            },
+            {
+                email: "Manager asks:\n\n\"How soon can you deliver?\"",
+                type: "clarity",
+                choices: [
+                    { text: "Soon.", score: 0, mood: 0, feedback: "Too vague.", hint: "Give a specific time or date." },
+                    { text: "By end of day.", score: 2, mood: 0, feedback: "Better, but still broad.", hint: "Narrow it down further." },
+                    { text: "I can deliver by 3 PM today — does that work for you?", score: 3, mood: +2, feedback: "Clear and collaborative.", hint: "Offer a concrete time and invite confirmation." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Passive-Aggressive Client",
+        stages: [
+            {
+                email: "Subject: Follow-up\n\nI guess you didn’t see my last email.\n\n– Client",
+                type: "tone",
+                choices: [
+                    { text: "I did. I was busy.", score: 0, mood: -2, feedback: "Defensive and dismissive.", hint: "Acknowledge and update instead." },
+                    { text: "Sorry.", score: 1, mood: -1, feedback: "Apologizes but doesn’t add value.", hint: "Pair apology with information." },
+                    { text: "Thanks for the follow-up — I’ve reviewed your last email and here’s the current status: [brief update].", score: 3, mood: +2, feedback: "Professional and informative.", hint: "Acknowledge and provide an update." }
+                ]
+            },
+            {
+                email: "Client replies:\n\n\"Well, I hope this doesn’t delay the project.\"",
+                type: "tone",
+                choices: [
+                    { text: "It won’t if you stop emailing.", score: 0, mood: -3, feedback: "Escalates tension.", hint: "Avoid sarcasm." },
+                    { text: "We’re fine.", score: 1, mood: 0, feedback: "Reassuring but vague.", hint: "Add more detail." },
+                    { text: "I understand the concern — based on our current timeline, we’re still on track. I’ll let you know immediately if that changes.", score: 3, mood: +2, feedback: "Reassuring and specific.", hint: "Address the concern directly." }
+                ]
+            },
+            {
+                email: "Client says:\n\n\"Okay. Keep me posted.\"",
+                type: "clarity",
+                choices: [
+                    { text: "Sure.", score: 1, mood: 0, feedback: "Neutral but minimal.", hint: "Add timing for updates." },
+                    { text: "Stop worrying.", score: 0, mood: -2, feedback: "Dismissive.", hint: "Validate instead of dismissing." },
+                    { text: "Will do — I’ll send you the next update by 4 PM today.", score: 3, mood: +2, feedback: "Clear and time-bound.", hint: "Specify when you’ll follow up." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Confused New Hire",
+        stages: [
+            {
+                email: "Subject: I think I broke something\n\nHi, I think I broke something.\n\n– New Hire",
+                type: "clarity",
+                choices: [
+                    { text: "What did you do?", score: 0, mood: -1, feedback: "Can sound accusatory.", hint: "Ask in a calmer, more specific way." },
+                    { text: "Can you describe what happened?", score: 2, mood: 0, feedback: "Reasonable, but a bit brief.", hint: "Add reassurance." },
+                    { text: "No worries — can you tell me what you were trying to do when the issue appeared?", score: 3, mood: +2, feedback: "Supportive and specific.", hint: "Reassure and gather details." }
+                ]
+            },
+            {
+                email: "New Hire replies:\n\n\"I clicked something and now everything is gone.\"",
+                type: "tone",
+                choices: [
+                    { text: "That’s not helpful.", score: 0, mood: -2, feedback: "Critical and unhelpful.", hint: "Guide them instead." },
+                    { text: "Okay…", score: 1, mood: -1, feedback: "Unclear and not very supportive.", hint: "Ask a clarifying question." },
+                    { text: "Let’s figure it out — what exactly disappeared (a file, a folder, or an app)?", score: 3, mood: +2, feedback: "Calm and clarifying.", hint: "Offer options to narrow it down." }
+                ]
+            },
+            {
+                email: "New Hire replies:\n\n\"It was the shared folder.\"",
+                type: "security",
+                choices: [
+                    { text: "I’ll restore it — next time avoid deleting shared folders.", score: 1, mood: 0, feedback: "Helpful but a bit scolding.", hint: "Add guidance, not just warning." },
+                    { text: "Restore it yourself.", score: 0, mood: -2, feedback: "Unhelpful and may not be possible.", hint: "Take ownership and teach." },
+                    { text: "I’ll restore it — and I’ll send you a short guide on working with shared folders so this doesn’t happen again.", score: 3, mood: +2, feedback: "Supportive and educational.", hint: "Turn mistakes into learning moments." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Wrong File Vendor",
+        stages: [
+            {
+                email: "Subject: Invoice Attached\n\nAttached is the invoice.\n\n– Vendor\n\n(But the attachment is clearly the wrong file.)",
+                type: "clarity",
+                choices: [
+                    { text: "This is wrong.", score: 0, mood: -1, feedback: "Accurate but abrupt.", hint: "Be specific and polite." },
+                    { text: "Can you resend the correct file?", score: 2, mood: 0, feedback: "Polite but not specific.", hint: "Reference the invoice or PO number." },
+                    { text: "Thanks — this appears to be the wrong file. Could you resend the invoice for PO #4821?", score: 3, mood: +2, feedback: "Clear, polite, and specific.", hint: "Mention the exact item you need." }
+                ]
+            },
+            {
+                email: "Vendor replies:\n\n\"Oops, here.\" (correct file attached)",
+                type: "tone",
+                choices: [
+                    { text: "Finally.", score: 0, mood: -2, feedback: "Passive-aggressive.", hint: "Keep the relationship positive." },
+                    { text: "Thanks — received.", score: 2, mood: 0, feedback: "Polite but brief.", hint: "You can add a bit more context." },
+                    { text: "Thanks — I’ve received the correct invoice and will process it now.", score: 3, mood: +2, feedback: "Professional and clear.", hint: "Confirm what you’ll do next." }
+                ]
+            },
+            {
+                email: "You’re about to forward the invoice to Finance.\nWhat do you write?",
+                type: "clarity",
+                choices: [
+                    { text: "Here’s the invoice.", score: 1, mood: 0, feedback: "Okay, but not very descriptive.", hint: "Add vendor and purpose." },
+                    { text: "Invoice attached for processing.", score: 2, mood: 0, feedback: "Decent, but could be clearer.", hint: "Include vendor and PO number." },
+                    { text: "Attached: Vendor invoice for PO #4821 — please process according to standard terms.", score: 3, mood: +2, feedback: "Clear, specific, and actionable.", hint: "Summarize what it is and what should happen." }
+                ]
+            }
+        ]
+    },
+    // Extra rude/defensive-flavored packs
+    {
+        title: "Blunt Manager Reply",
+        stages: [
+            {
+                email: "Subject: Missed Deadline\n\nYou missed the deadline. Again. This is getting old.\n\n– Manager",
+                type: "tone",
+                choices: [
+                    { text: "Maybe if you gave better instructions, I wouldn’t miss it.", score: 0, mood: -3, feedback: "Very defensive and disrespectful.", hint: "Don’t attack the sender." },
+                    { text: "I know, but I had a lot going on.", score: 1, mood: -2, feedback: "Centers yourself instead of the impact.", hint: "Acknowledge and propose a fix." },
+                    { text: "I understand this is frustrating — I missed the deadline and I’m adjusting my plan so it doesn’t happen again.", score: 3, mood: +2, feedback: "Takes ownership and looks forward.", hint: "Own the mistake and show a plan." }
+                ]
+            },
+            {
+                email: "Manager replies:\n\n\"We can’t keep doing this. What’s changing?\"",
+                type: "clarity",
+                choices: [
+                    { text: "Nothing, I’ll just try harder.", score: 1, mood: -1, feedback: "Vague and not convincing.", hint: "Be specific about changes." },
+                    { text: "I’ll work late and hope it’s enough.", score: 1, mood: -1, feedback: "Unsustainable and unclear.", hint: "Focus on process, not just hours." },
+                    { text: "I’m blocking calendar time for this work and confirming requirements earlier so I don’t get surprised by last-minute changes.", score: 3, mood: +2, feedback: "Concrete process improvements.", hint: "Describe specific behavior changes." }
+                ]
+            },
+            {
+                email: "Manager says:\n\n\"Fine. I’ll hold you to that.\"",
+                type: "tone",
+                choices: [
+                    { text: "You’re overreacting.", score: 0, mood: -2, feedback: "Invalidates their concern.", hint: "Respect their position." },
+                    { text: "Okay.", score: 1, mood: 0, feedback: "Neutral but flat.", hint: "You can close with a bit more professionalism." },
+                    { text: "Understood — thanks for the chance to correct this.", score: 3, mood: +2, feedback: "Professional and accountable.", hint: "End on a constructive note." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Rude Peer Email",
+        stages: [
+            {
+                email: "Subject: Seriously?\n\nWhy did you send that to the client without asking me? That was a terrible idea.\n\n– Taylor",
+                type: "tone",
+                choices: [
+                    { text: "Because you were too slow to respond.", score: 0, mood: -3, feedback: "Defensive and blaming.", hint: "Avoid counter-attacks." },
+                    { text: "Relax, it wasn’t that bad.", score: 1, mood: -2, feedback: "Minimizes their concern.", hint: "Acknowledge impact first." },
+                    { text: "I see this caused concern — I should have looped you in first. Let’s align on a quick process so this doesn’t happen again.", score: 3, mood: +2, feedback: "Acknowledges impact and suggests a fix.", hint: "Own your part and propose a process." }
+                ]
+            },
+            {
+                email: "Taylor replies:\n\n\"Next time, don’t move without me.\"",
+                type: "clarity",
+                choices: [
+                    { text: "Then answer your messages faster.", score: 0, mood: -3, feedback: "Escalates conflict.", hint: "Don’t throw blame back." },
+                    { text: "Fine.", score: 1, mood: -1, feedback: "Short and tense.", hint: "You can still be professional." },
+                    { text: "Understood — I’ll check with you before sending anything client-facing, or confirm with our manager if timing is tight.", score: 3, mood: +2, feedback: "Balances collaboration and practicality.", hint: "Offer a realistic process." }
+                ]
+            },
+            {
+                email: "Later, your manager asks what happened.",
+                type: "tone",
+                choices: [
+                    { text: "Taylor freaked out over nothing.", score: 0, mood: -2, feedback: "Dismissive and judgmental.", hint: "Stick to facts and outcomes." },
+                    { text: "We had a miscommunication about who approves client emails.", score: 2, mood: 0, feedback: "Better, but could mention the fix.", hint: "Show what you changed." },
+                    { text: "We had a miscommunication about approvals — we agreed I’ll loop Taylor in before sending, or escalate if timing is tight.", score: 3, mood: +2, feedback: "Clear, factual, and solution-focused.", hint: "Describe the new agreement." }
+                ]
+            }
+        ]
+    },
+    {
+        title: "Defensive IT Response",
+        stages: [
+            {
+                email: "Subject: Ticket Still Open\n\nWhy is this ticket still open? Do you all actually fix anything?\n\n– Employee",
+                type: "tone",
+                choices: [
+                    { text: "If you read the notes, you’d know.", score: 0, mood: -3, feedback: "Rude and dismissive.", hint: "Don’t insult the user." },
+                    { text: "We’re busy. You’re not the only one.", score: 1, mood: -2, feedback: "Defensive and unhelpful.", hint: "Explain status calmly." },
+                    { text: "I understand it’s frustrating — your ticket is waiting on vendor approval. I’ll update you as soon as we get confirmation.", score: 3, mood: +2, feedback: "Calm, factual, and empathetic.", hint: "Explain the blocker and next step." }
+                ]
+            },
+            {
+                email: "Employee replies:\n\n\"Feels like you’re just ignoring it.\"",
+                type: "tone",
+                choices: [
+                    { text: "That’s not true, stop assuming.", score: 0, mood: -3, feedback: "Confrontational.", hint: "Avoid arguing about feelings." },
+                    { text: "We’re doing our best.", score: 1, mood: -1, feedback: "Vague reassurance.", hint: "Re-anchor to facts and timelines." },
+                    { text: "I hear that it feels that way — here’s what’s happened so far: [brief timeline]. I’ll send another vendor follow-up today.", score: 3, mood: +2, feedback: "Validates feelings and adds specifics.", hint: "Combine empathy with concrete actions." }
+                ]
+            },
+            {
+                email: "Final step: How do you close the thread once it’s resolved?",
+                type: "tone",
+                choices: [
+                    { text: "See? We fixed it eventually.", score: 0, mood: -2, feedback: "Smug and unprofessional.", hint: "Avoid gloating." },
+                    { text: "Your issue is resolved.", score: 2, mood: 0, feedback: "Accurate but flat.", hint: "Add a bit of support." },
+                    { text: "Your issue is now resolved — if anything looks off, reply here and we’ll jump back in.", score: 3, mood: +2, feedback: "Supportive and open-ended.", hint: "Invite follow-up in a calm way." }
+                ]
+            }
+        ]
+    }
+];
+
+// Generate 200 scenarios for career mode with slight labeling variation
+const careerScenarios = [];
+for (let i = 0; i < 200; i++) {
+    const base = baseScenarios[i % baseScenarios.length];
+    const variantTag = (i % 4 === 0) ? " – Priority Inbox" :
+                       (i % 4 === 1) ? " – Escalation Thread" :
+                       (i % 4 === 2) ? " – Follow-Up Chain" :
+                                       " – Late-Night Email";
+    careerScenarios.push({
+        title: base.title + " #" + (i + 1) + variantTag,
+        stages: base.stages
+    });
+}
+
+// Simple boss fight: use a subset of harder-feeling scenarios
+const bossScenarios = [
+    baseScenarios[1], // Frustrated Coworker
+    baseScenarios[2], // Suspicious Vendor
+    baseScenarios[7], // Passive-Aggressive Client
+    baseScenarios[baseScenarios.length - 1] // Defensive IT Response
+];
+
+// Final exam: first 10 career scenarios, no power-ups
+const examScenarios = careerScenarios.slice(0, 10);
+
+// Game state
+let currentMode = "home"; // "career", "boss", "exam"
+let scenarios = [];
+let currentScenarioIndex = 0;
+let currentStageIndex = 0;
+let totalScore = 0;
+let moodScore = 0; // -10 to +10
+let xp = 0;
+let level = 1;
+let coins = 0;
+let perfectChoices = 0;
+
+// Power-ups
+const powerUps = { tone: 1, clarity: 1, security: 1 };
+
+// Achievements
+const achievements = [
+    { id: "firstPerfect", name: "Tone Master", desc: "Earn a perfect 3-point choice once.", unlocked: false },
+    { id: "score100", name: "Inbox Warrior", desc: "Reach 100 total score.", unlocked: false },
+    { id: "coins20", name: "Shop Regular", desc: "Earn 20 coins.", unlocked: false },
+    { id: "bossClear", name: "Executive Slayer", desc: "Finish the boss fight mode.", unlocked: false },
+    { id: "examClear", name: "Certified Pro", desc: "Finish the final exam mode.", unlocked: false }
+];
+
+// DOM
+const modeLabel = document.getElementById("modeLabel");
+const gamePanel = document.getElementById("gamePanel");
+const homeMenu = document.getElementById("homeMenu");
+const shopPanel = document.getElementById("shopPanel");
+const achievementsPanel = document.getElementById("achievementsPanel");
+const inboxPanel = document.getElementById("inboxPanel");
+const leaderboardPanel = document.getElementById("leaderboardPanel");
+const placeholderPanel = document.getElementById("placeholderPanel");
+
+const scenarioIndexSpan = document.getElementById("scenarioIndex");
+const scenarioTotalSpan = document.getElementById("scenarioTotal");
+const stageIndexSpan = document.getElementById("stageIndex");
+const scoreSpan = document.getElementById("score");
+const xpSpan = document.getElementById("xp");
+const levelSpan = document.getElementById("level");
+const coinsSpan = document.getElementById("coins");
+const coinsShopSpan = document.getElementById("coinsShop");
+const moodBar = document.getElementById("moodBar");
+const moodText = document.getElementById("moodText");
+
+const titleDiv = document.getElementById("title");
+const emailDiv = document.getElementById("email");
+const choicesDiv = document.getElementById("choices");
+const feedbackDiv = document.getElementById("feedback");
+const nextBtn = document.getElementById("nextBtn");
+const hintBox = document.getElementById("hintBox");
+
+const toneBtn = document.getElementById("toneBtn");
+const clarityBtn = document.getElementById("clarityBtn");
+const securityBtn = document.getElementById("securityBtn");
+const toneCountSpan = document.getElementById("toneCount");
+const clarityCountSpan = document.getElementById("clarityCount");
+const securityCountSpan = document.getElementById("securityCount");
+
+const reflectionBox = document.getElementById("reflectionBox");
+const reflectionQuestionsDiv = document.getElementById("reflectionQuestions");
+const reflectionInput = document.getElementById("reflectionInput");
+
+// Mode control
+function returnHome() {
+    currentMode = "home";
+    modeLabel.textContent = "Home";
+    gamePanel.classList.add("hidden");
+    placeholderPanel.style.display = "flex";
+    homeMenu.classList.remove("hidden");
+    shopPanel.style.display = "none";
+    achievementsPanel.style.display = "none";
+    inboxPanel.style.display = "none";
+    leaderboardPanel.style.display = "none";
+}
+
+function startCareer() {
+    currentMode = "career";
+    modeLabel.textContent = "Career Mode";
+    scenarios = careerScenarios;
+    startRun();
+}
+
+function startBoss() {
+    currentMode = "boss";
+    modeLabel.textContent = "Boss Fight";
+    scenarios = bossScenarios;
+    startRun(true); // harder: no power-ups
+}
+
+function startExam() {
+    currentMode = "exam";
+    modeLabel.textContent = "Final Exam";
+    scenarios = examScenarios;
+    startRun(true); // no power-ups
+}
+
+function startRun(disablePowerups = false) {
+    homeMenu.classList.add("hidden");
+    gamePanel.classList.remove("hidden");
+    placeholderPanel.style.display = "none";
+    shopPanel.style.display = "none";
+    achievementsPanel.style.display = "none";
+    inboxPanel.style.display = "none";
+    leaderboardPanel.style.display = "none";
+
+    currentScenarioIndex = 0;
+    currentStageIndex = 0;
+    totalScore = 0;
+    moodScore = 0;
+    updateMoodBar();
+    scoreSpan.textContent = totalScore;
+    scenarioTotalSpan.textContent = scenarios.length;
+
+    if (currentMode === "career") {
+        powerUps.tone = 1;
+        powerUps.clarity = 1;
+        powerUps.security = 1;
+    }
+
+    setPowerupButtons(disablePowerups);
+    renderScenario();
+}
+
+function setPowerupButtons(disable) {
+    const disabled = disable || currentMode === "boss" || currentMode === "exam";
+    toneBtn.disabled = disabled || powerUps.tone <= 0;
+    clarityBtn.disabled = disabled || powerUps.clarity <= 0;
+    securityBtn.disabled = disabled || powerUps.security <= 0;
+    toneCountSpan.textContent = powerUps.tone;
+    clarityCountSpan.textContent = powerUps.clarity;
+    securityCountSpan.textContent = powerUps.security;
+}
+
+// Shop & achievements toggles
+function toggleShop() {
+    shopPanel.style.display = shopPanel.style.display === "none" ? "block" : "none";
+    coinsShopSpan.textContent = coins;
+}
+
+function toggleAchievements() {
+    achievementsPanel.style.display = achievementsPanel.style.display === "none" ? "block" : "none";
+    renderAchievements();
+}
+
+function toggleInbox() {
+    inboxPanel.style.display = inboxPanel.style.display === "none" ? "block" : "none";
+}
+
+// Leaderboard toggle
+function toggleLeaderboard() {
+    leaderboardPanel.style.display = leaderboardPanel.style.display === "none" ? "block" : "none";
+    renderLeaderboard();
+}
+
+// Shop logic
+function buyPowerup(type, cost) {
+    if (coins < cost) return;
+    coins -= cost;
+    powerUps[type]++;
+    updateStats();
+    setPowerupButtons(false);
+}
+
+// Achievements
+function unlockAchievement(id) {
+    const ach = achievements.find(a => a.id === id);
+    if (ach && !ach.unlocked) {
+        ach.unlocked = true;
+        renderAchievements();
+    }
+}
+
+function renderAchievements() {
+    const list = document.getElementById("achievementsList");
+    list.innerHTML = "";
+    achievements.forEach(a => {
+        const span = document.createElement("span");
+        span.className = "badge";
+        span.textContent = (a.unlocked ? "✅ " : "⬜ ") + a.name;
+        span.title = a.desc;
+        list.appendChild(span);
+    });
+}
+
+// Mood & stats
+function updateMoodBar() {
+    const normalized = (moodScore + 10) / 20;
+    const width = Math.max(5, Math.min(100, normalized * 100));
+    moodBar.style.width = width + "%";
+    if (moodScore <= -5) moodText.textContent = "Stressed";
+    else if (moodScore < 2) moodText.textContent = "Neutral";
+    else if (moodScore < 7) moodText.textContent = "Positive";
+    else moodText.textContent = "On Fire";
+}
+
+function updateStats() {
+    scoreSpan.textContent = totalScore;
+    xpSpan.textContent = xp;
+    levelSpan.textContent = level;
+    coinsSpan.textContent = coins;
+    coinsShopSpan.textContent = coins;
+
+    const newLevel = 1 + Math.floor(xp / 50);
+    if (newLevel !== level) {
+        level = newLevel;
+        levelSpan.textContent = level;
+    }
+
+    if (perfectChoices >= 1) unlockAchievement("firstPerfect");
+    if (totalScore >= 100) unlockAchievement("score100");
+    if (coins >= 20) unlockAchievement("coins20");
+}
+
+// Power-up usage
+function usePowerup(type) {
+    if (powerUps[type] <= 0) return;
+    powerUps[type]--;
+    setPowerupButtons(false);
+
+    const stage = scenarios[currentScenarioIndex].stages[currentStageIndex];
+    const best = stage.choices.reduce((max, c) => c.score > max.score ? c : max, stage.choices[0]);
+    hintBox.textContent = "Hint (" + type + "): " + best.hint;
+}
+
+// Rendering
+function renderScenario() {
+    const scenario = scenarios[currentScenarioIndex];
+    const stage = scenario.stages[currentStageIndex];
+
+    scenarioIndexSpan.textContent = currentScenarioIndex + 1;
+    stageIndexSpan.textContent = currentStageIndex + 1;
+
+    titleDiv.textContent = scenario.title;
+    emailDiv.textContent = stage.email;
+    choicesDiv.innerHTML = "";
+    feedbackDiv.style.display = "none";
+    feedbackDiv.textContent = "";
+    nextBtn.style.display = "none";
+    hintBox.textContent = "";
+
+    stage.choices.forEach((choice, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = choice.text;
+        btn.onclick = () => handleChoice(choice, idx);
+        choicesDiv.appendChild(btn);
+    });
+
+    setPowerupButtons(currentMode === "boss" || currentMode === "exam");
+}
+
+function handleChoice(choice, idx) {
+    const stage = scenarios[currentScenarioIndex].stages[currentStageIndex];
+
+    totalScore += choice.score;
+    moodScore += choice.mood || 0;
+    updateMoodBar();
+
+    if (choice.score === 3) {
+        xp += 5;
+        coins += 2;
+        perfectChoices++;
+    } else if (choice.score === 2) {
+        xp += 3;
+        coins += 1;
+    } else if (choice.score === 1) {
+        xp += 1;
+    }
+
+    updateStats();
+
+    feedbackDiv.style.display = "block";
+    feedbackDiv.textContent = choice.feedback;
+
+    const bestScore = Math.max(...stage.choices.map(c => c.score));
+    const buttons = choicesDiv.querySelectorAll(".choice");
+    buttons.forEach((b, i) => {
+        b.classList.add("disabled");
+        if (stage.choices[i].score === bestScore) {
+            b.classList.add("best-hint");
+        }
+    });
+
+    if (Math.random() < 0.25) {
+        openReflection();
+    }
+
+    nextBtn.style.display = "inline-block";
+}
+
+// Reflection
+function openReflection() {
+    const prompts = reflectionPrompts[Math.floor(Math.random() * reflectionPrompts.length)];
+    reflectionQuestionsDiv.innerHTML = "";
+    prompts.forEach(p => {
+        const div = document.createElement("div");
+        div.textContent = "• " + p;
+        reflectionQuestionsDiv.appendChild(div);
+    });
+    reflectionInput.value = "";
+    reflectionBox.style.display = "block";
+}
+
+function closeReflection() {
+    reflectionBox.style.display = "none";
+}
+
+// ----------------------
+// LEADERBOARD SYSTEM
+// ----------------------
+function saveScoreToLeaderboard() {
+    const name = prompt("Enter your name for the leaderboard:", "Player");
+    if (!name) return;
+
+    const entry = {
+        name: name,
+        score: totalScore,
+        xp: xp,
+        mode: currentMode,
+        date: new Date().toLocaleDateString()
+    };
+
+    let board = JSON.parse(localStorage.getItem("emailLeaderboard") || "[]");
+    board.push(entry);
+
+    // Sort by score descending
+    board.sort((a, b) => b.score - a.score);
+
+    // Keep only top 10
+    board = board.slice(0, 10);
+
+    localStorage.setItem("emailLeaderboard", JSON.stringify(board));
+}
+
+function renderLeaderboard() {
+    const board = JSON.parse(localStorage.getItem("emailLeaderboard") || "[]");
+    const tbody = document.querySelector("#leaderboardTable tbody");
+    tbody.innerHTML = "";
+
+    board.forEach(entry => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${entry.name}</td>
+            <td>${entry.score}</td>
+            <td>${entry.xp}</td>
+            <td>${entry.mode}</td>
+            <td>${entry.date}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// End of run
+function endRun() {
+    gamePanel.classList.add("hidden");
+    placeholderPanel.style.display = "flex";
+    homeMenu.classList.remove("hidden");
+    modeLabel.textContent = "Home";
+
+    if (currentMode === "boss") unlockAchievement("bossClear");
+    if (currentMode === "exam") unlockAchievement("examClear");
+
+    saveScoreToLeaderboard();
+
+    alert("Run complete!\nScore: " + totalScore + "\nXP: " + xp + "\nCoins: " + coins);
+}
+
+// Next step logic
+function nextStep() {
+    const scenario = scenarios[currentScenarioIndex];
+    if (currentStageIndex < scenario.stages.length - 1) {
+        currentStageIndex++;
+        renderScenario();
+    } else {
+        currentScenarioIndex++;
+        currentStageIndex = 0;
+
+        if (currentScenarioIndex >= scenarios.length) {
+            endRun();
+        } else {
+            renderScenario();
+        }
+    }
+}
+
+// Init
+returnHome();
+renderAchievements();
+updateStats();
+updateMoodBar();
+renderLeaderboard();
+</script>
+</body>
+</html>
