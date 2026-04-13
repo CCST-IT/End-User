@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
     * { box-sizing: border-box; }
-/* 🌈 Global neon text style */
-.neon-text {
+/* 🌈 FULL NEON MODE – every text element glows */
+body, * {
     background: linear-gradient(90deg,
         #ff0080,
         #ff8c00,
@@ -17,10 +17,10 @@
         #8e24aa
     );
     -webkit-background-clip: text;
-    color: transparent;
-    font-weight: 600;
+    color: transparent !important;
     text-shadow: 0 0 8px rgba(255,255,255,0.35);
 }
+
 
 body {
     margin: 0;
