@@ -124,12 +124,18 @@ body {
         backdrop-filter: blur(10px);
     }
 
-    .rainbow-text {
-        background: linear-gradient(90deg, #ff0080, #ff8c00, #ffee00, #00e676, #00b0ff, #8e24aa);
-        -webkit-background-clip: text;
-        color: transparent;
-        font-weight: 600;
-    }
+.neon-text {
+    background: linear-gradient(90deg,
+        #ffee00,
+        #00e5ff,
+        #2979ff
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow: 0 0 8px rgba(255,255,255,0.35);
+    font-weight: 600;
+}
 
     .layout {
         position: relative;
